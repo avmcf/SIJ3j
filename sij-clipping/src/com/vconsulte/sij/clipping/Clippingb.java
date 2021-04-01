@@ -28,11 +28,12 @@ package com.vconsulte.sij.clipping;
 	//import java.util.Date;
 	import java.text.DateFormat;
 	//import java.text.SimpleDateFormat;
-	
+	import java.text.ParseException;
+
 	import org.apache.chemistry.opencmis.client.api.Folder;
 	import org.apache.chemistry.opencmis.client.api.Session;
 	import com.vconsulte.sij.base.InterfaceServidor;
-	import com.vconsulte.sij.base.GravaTexto;
+//	import com.vconsulte.sij.base.GravaTexto;
 	import com.vconsulte.sij.base.Comuns;
 
 public class Clippingb {
@@ -44,8 +45,8 @@ public class Clippingb {
 	static List <String> idEdicoes = new ArrayList<String>();
 	static List <String> log = new ArrayList<String>();
 	
+	static String [][] tabClientes = new String[100][2];
 	static String [] parametros = null;
-	
 	static String cliente;
 	static String usuario;
 	static String url;
@@ -57,7 +58,7 @@ public class Clippingb {
 	static String pastaLog;
 	static String tipoDocumento;
 	static String edtFolderName = "";
-	static String linhasIndexadas = "";
+	static String relatorioDeClipping = "";
 
 	static String idToken;
 	
@@ -81,6 +82,12 @@ public class Clippingb {
 	final static String tipoProcessamento = "BATCH";
 
 	public static void main(String[] args) throws Exception {
+		String dummy = "";
+		if(args.length>0) {
+			dummy = args[0];
+		    parametros = dummy.split(",");
+		    parametrizado = true;
+		}
 		processamento();
 	}
 	
@@ -90,8 +97,11 @@ public class Clippingb {
 		return dateFormat.format(date);
 	}
 
-    private static void processamento() throws Exception, IOException, Exception {
-
+    private static void processamento() throws Exception, IOException, Exception {   	
+    	
+    	String dummy = "";
+    	String dtEdicao = "";
+    	List <String> edicoesPorTribunal = new ArrayList<String>();
     	registraLog("Início do processamento do Clippingb\n");
     	registraLog("Carregando tabelas");
     	com.vconsulte.sij.base.Parametros.carregaTabelas();
@@ -122,251 +132,211 @@ public class Clippingb {
     	Comuns.apresentaMenssagem("\tPasta Carregamnto: " + pastaCarregamento,tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("\tPasta Publicações: " +pastaPublicacoes,tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("\tPasta Saida: " +pastaSaida,tipoProcessamento,"informativa", null);
-    	Comuns.apresentaMenssagem("\tPasta Tokesns: " +pastaTokens,tipoProcessamento,"informativa", null);
+    	Comuns.apresentaMenssagem("\tPasta Tokens: " +pastaTokens,tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("\tPasta de Logs: " +pastaLog,tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
     	System.out.print("\n");
+    	
     	registraLog("Conectando servidor.");
     	Comuns.apresentaMenssagem("Conectando com o servidor.",tipoProcessamento,"informativa", null);
 		sessao = Comuns.conectaServidor(usuario, password, url);
         Comuns.apresentaMenssagem("Servidor conectado com sucesso.",tipoProcessamento,"informativa", null);
-
 		if (sessao == null) {
 			registraLog("Falha na conexção com o servidor, processamento encerrado.");
     		Comuns.apresentaMenssagem("Falha na conexão com o servidor",tipoProcessamento,"erro", null);
 			Comuns.finalizaProcesso(tipoProcessamento);
 		}
-		registraLog("Carregando tabela de clientes");
-		tabClientes = conexao.listarClientes(sessao, limiteClientes);	
-		for(int x=0; x<=limiteClientes; x++) {
-			if(tabClientes[x][0] == null) {
-				registraLog("Fim do carregamento da tabela de clientes.");
-				break;
+		
+		/*
+		 * Usado para o caso de necessidade de reverter o processamento do clipping
+		 * 
+		 * reverterEdicoes("26-02-2021");	-> informe a data da edição a ser revertida
+		 * 
+		 */
+
+		if(parametros.length>0) {
+			for(int ix=0; ix<=parametros.length-1;ix++) {
+				tribunal = parametros[ix];
+				edicoesPorTribunal.clear();
+				registraLog("Carregando tabela de clientes");
+				tabClientes = conexao.listarClientes(sessao, limiteClientes);
+				for(int ix1=0; ix1<=tabClientes.length-1; ix1++) {
+					if(tabClientes[ix1][0] != null) {
+						edicoesPorTribunal = conexao.listarEdicoesPorTribunal(sessao, tribunal);
+						if(edicoesPorTribunal.isEmpty()) {
+							registraLog("Não há edições para o tribunal: " + parametros[ix]);
+				    		Comuns.apresentaMenssagem("Não há edições para o tribunal: " + parametros[ix],tipoProcessamento,"erro", null);
+				    		relatorioDeClipping = relatorioDeClipping + "Não edições para o tribunal: " + parametros[ix];
+						} else {
+							for(int ix2=0; ix2<=edicoesPorTribunal.size()-1;ix2++) {
+								indexar(edicoesPorTribunal.get(ix2), tabClientes[ix1][0], tabClientes[ix1][1]);
+								InterfaceServidor.atualizaEdicaoClipada(sessao, tabClientes[ix1][0], edicoesPorTribunal.get(ix2));
+								dtEdicao =  conexao.obtemEdicaoPasta(sessao, edicoesPorTribunal.get(ix2));
+								dtEdicao = dtEdicao.replace("/", "-");
+								String relatorio = pastaLog + "/clp-"+ tribunal + "-" + dtEdicao + ".txt";
+								registraLog("Gravando relatorio de indexação.");
+								registraLog("Fim do Processamento.");							
+								gravaArquivo(relatorio, relatorioDeClipping); //String nomeArquivo, String linhas
+							}
+						};
+					}
+					break;
+				}
 			}
-			indexador(tabClientes);			
+		} else {
+			registraLog("Não foi informado tribunais para processamento." );
+    		Comuns.apresentaMenssagem("Não foi informado tribunais para processamento.",tipoProcessamento,"erro", null);
 		}
-		String arquivoLog = "logClipping"+obtemHrAtual() + ".log";
-		registraLog("Gravando log.");
-		registraLog("Fim do Processamento.");
-		gravaLogClipagem(log, arquivoLog);
 		System.out.println("\n");
     	Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("Fim do processamento do Clipping.",tipoProcessamento,"informativa", null);
     	Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
-		
-    	//Comuns.finalizaProcesso(tipoProcessamento);
+		registraLog("Fim do processamento do Clipping.");
+    	dummy = getDateTime().replace("/", "-");
+		dummy = dummy.replace(":", "-");
+		dummy = dummy.replace(" ", "_");
+		String logName = pastaLog + "/" + tribunal + "-indexacao-" + dummy + ".log";
+		gravaLog(log, logName);
+		log.clear();
     }
-  
-    private static void indexador(String [][] tabClientes) throws NullPointerException, IOException, Exception {
+    
+    private static void indexar(String edicao, String cliente, String destino) throws NullPointerException, IOException, Exception {
     	int ix = 0;
     	int publicacoesIncluidas = 0;
     	int localizados = 0;
     	int naoLocalizados = 0;
     	int totalPublicacoes = 0;
     	int totalTokens = 0;
+    	int dupl = 0;
+    	int qtdPublicacoes = 0;
     	boolean edicaoRegistrada = false;
-    	String linha = "";
-    	String cliente = "";
-    	String destino = "";   	
-    	String tokenTribunal = "";
+    	String linha = "";  	
     	String [][] edicoesIndexadas = new String [1000][2];
     	String dummy = "";
     	List <String> tabelasTokens = new ArrayList<String>();
     	List <String> tokens = new ArrayList<String>();   	
     	List <String> publicacoes = new ArrayList<String>();
     	List <String> edicoesSelecionadas = new ArrayList<String>();
-    	registraLog("Início da Indexação.");
-       
-// loop de clientes
-    	for(int ix1=0; ix1<=limiteClientes; ix1++) {														// ix1 - obtem lista de clientes
-        	if(tabClientes[ix1][0] == null) {
-        		break;
-        	}
-        	int dupl = 0;
-        	cliente = tabClientes[ix1][0];
-        	destino = tabClientes[ix1][1]; 
-        	registraLog("Obtendo tabelas de tokens para o cliente: " + tabClientes[ix1][0]);
-        	tabelasTokens = conexao.obtemTabelasTokens(sessao, cliente);
-        	if(!tabelasTokens.isEmpty()) {
-        	
-// Loop de tabelas tokens        
-	        	for(int ix2=0; ix2<=tabelasTokens.size()-1; ix2++) {					// ix2 - obtem tabTokens do cliente
-	        		
-	        		if(!linhasIndexadas.isEmpty()) {
-	        			dummy = getDateTime().replace("/", "-");
-	        			dummy = dummy.replace(":", "-");
-	        			dummy = dummy.replace(" ", "_");
-	        			linhasIndexadas = linhasIndexadas + "\n-----------------------------------------------------------------\n";
-	        			registraLog("Gravando relatorio de recorte: " + pastaLog + "/" + tokenTribunal + "-indexacao-" + dummy + ".txt");
-	        			gravaArquivo(pastaLog + "/" + tokenTribunal + "-indexacao-" + dummy + ".txt",linhasIndexadas);
-	        		} 
-	        		
-	        		linhasIndexadas = "";
-	        		linhasIndexadas = "Processamento da localização de publicações: " + getDateTime();
-	        		
-// carrega tabela de tokens
-	        		tokenTribunal = InterfaceServidor.obtemTribunalToken(sessao, tabelasTokens.get(ix2));
-	        		registraLog("Início da localização das publicações para o tribunal: " + tokenTribunal);
-	        		Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
-	        		Comuns.apresentaMenssagem("Início da localização das publicações para o tribunal: " + tokenTribunal, tipoProcessamento,"informativa", null);
-	        		linhasIndexadas = getDateTime() + ">>> Início do processamento do tribunal: " + cliente + "/" + tokenTribunal + " <<<\n";
-	        		linhasIndexadas = linhasIndexadas + "-----------------------------------------------------------------\n";
-	        		registraLog(">>> Início do processamento do tribunal: " + cliente + "/" + tokenTribunal + " <<<");
-	        		
-	        		localizados = 0;
-	        		naoLocalizados = 0;
-	        		publicacoesIncluidas = 0;
-	        		totalTokens = 0;
-	        		edicoesSelecionadas.clear();
-	        		registraLog("Selecionando edições para o tribunal: " + cliente + "/" + tokenTribunal);
-	        		
-// seleciona edicoes
-	        		edicoesSelecionadas = conexao.listarEdicoesPorTribunal(sessao, tokenTribunal);
-	        		registraLog(edicoesSelecionadas.size() + " edição selecionada para o tribunal: " + cliente + "/" + tokenTribunal);
-	        		registraLog("-----------------------------------------------------------------\"");
-	        		
-	        		if(edicoesSelecionadas.isEmpty()) {
-	        			registraLog("Não há edicoes para este tribunal: " + cliente + "/" + tokenTribunal);
-	        			Comuns.apresentaMenssagem("Não há edições para este tribunal: " + cliente + "/" + tokenTribunal,tipoProcessamento,"informativa", null);
-	        			Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
-	        			System.out.println("\n");
-	        			linhasIndexadas = linhasIndexadas + " Não há edicoes para este tribunal: "  + cliente + " - " + tokenTribunal; 
-	        			continue;
-	        		} else {               		
-	            		registraLog("Localizada(s) " + edicoesSelecionadas.size() + " edições não indexada(s) para o tribunal " + cliente + "/" + tokenTribunal);
-	            		Comuns.apresentaMenssagem("Localizada(s) edições " + edicoesSelecionadas.size() + " não indexada(s) para o tribunal " + cliente + "/" + tokenTribunal, tipoProcessamento,"informativa", null);
-k++;	        		
-	        		}
-	  
-	        		registraLog("Início do loop de tokens para o tribunal: " + cliente + "/" + tokenTribunal);
-	        		Comuns.apresentaMenssagem("Início do loop de tokens para o tribunal: " + cliente + "/" + tokenTribunal, tipoProcessamento,"informativa", null);
-	        		linhasIndexadas = linhasIndexadas + "\n" + Comuns.obtemHrAtual() + " - Localizando publicações para o tribunal: " + cliente + "/" + tokenTribunal + " -> " + edicoesSelecionadas.size()+"\n";     
+    	registraLog("Início da Indexação para: " + cliente + "/" + tribunal);
+    	
+    	registraLog("Obtendo tabela de tokens para o cliente: " + tribunal + "/" + cliente);
+    	tabelasTokens = conexao.obtemTabelasTokens(sessao, cliente, tribunal);
+    	
+    	if(!tabelasTokens.isEmpty()) {
+    		if(tabelasTokens.size() == 1) {
+    			registraLog("Início da localização das publicações para o tribunal: " + tribunal);
+    			Comuns.apresentaMenssagem("-----------------------------------------------------------------",tipoProcessamento,"informativa", null);
+        		Comuns.apresentaMenssagem("Início da localização das publicações para o tribunal: " +tribunal, tipoProcessamento,"informativa", null);
+        		relatorioDeClipping = getDateTime() + ">>> Início do processamento do tribunal: " + cliente + "/" + tribunal + " <<<\n";
+        		relatorioDeClipping = relatorioDeClipping + "-----------------------------------------------------------------\n";
+        		registraLog(">>> Início do processamento do tribunal: " + cliente + "/" + tribunal + " <<<");
+        		localizados = 0;
+        		naoLocalizados = 0;
+        		publicacoesIncluidas = 0;
+        		totalTokens = 0;
 
-// pesquisa nas edicoes selecionadas
-	        		for(int ix3=0; ix3<=edicoesSelecionadas.size()-1;ix3++) {			// ix3 - ediçoes selc para o tribunal da tabToken
+    			registraLog("Localizada(s) " + edicoesSelecionadas.size() + " edições não indexada(s) para o tribunal " + cliente + "/" + tribunal);
+        		Comuns.apresentaMenssagem("Localizada(s) edições " + edicoesSelecionadas.size() + " não indexada(s) para o tribunal " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+        		
+        		registraLog("Início do loop de tokens para o tribunal: " + cliente + "/" + tribunal);
+        		Comuns.apresentaMenssagem("Início do loop de tokens para o tribunal: " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+        		relatorioDeClipping = relatorioDeClipping + "\n" + Comuns.obtemHrAtual() + " - Localizando publicações para o tribunal: " + cliente + "/" + tribunal + " -> " + edicoesSelecionadas.size()+"\n";     
+	        		
+    			registraLog("Verificando se a edição: " + edicao + " já foi verificada para o tribunal " + cliente + "/" + tribunal);
+    			Comuns.apresentaMenssagem("Verificando se a edição já foi verificada. ", tipoProcessamento,"informativa", null);
+    			if(conexao.verificaEdicaoNaoClipada(sessao, edicao, cliente)) {
+    				registraLog("A edição: " + edicao + "  ainda não foi verificada. " + cliente + "/" + tribunal);
+    				Comuns.apresentaMenssagem("A edição ainda não foi verificada.", tipoProcessamento,"informativa", null);
+    				edicoesIndexadas[ix][0] = cliente;
+		        	edicoesIndexadas[ix][1] = edicao;
+    				ix++;
+    				Comuns.apresentaMenssagem("Carregando tabela de tokens para o tribunal: " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+    				registraLog("Carregando tabela de tokens para o tribunal: " + cliente + "/" + tribunal);
+		        	tokens = conexao.carregaTokensBatch(sessao, tabelasTokens.get(0));
+		        	if(!tokens.isEmpty()) {
+		        		totalTokens = tokens.size();
+			        	registraLog("Tabela de tokens carregada");
+			        	Comuns.apresentaMenssagem("Carregados " + totalTokens + " tokens desta tabela de tokens do tribunal: " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+			        	registraLog("Carregados " + totalTokens + " tokens desta tabela de tokens do tribunal: " + cliente + "/" + tribunal);
+        				edicaoRegistrada = false;
+        				for(int ix4=0; ix4<=tokens.size()-1; ix4++) {				// ix4 - loop de procura para cada token
+        					//Comuns.apresentaMenssagem("Localizando publicações para o token:  " + tokens.get(ix4).trim(), tipoProcessamento,"informativa", null);
+        					registraLog("Localizando publicações para o token:  " + tokens.get(ix4).trim());      				
+        					qtdPublicacoes = conexao.verificaQtdPublicacoes(sessao, edicao);
+        					if(qtdPublicacoes > 0){
+        						publicacoes = conexao.localizaPublicacoes(sessao, edicao, tribunal, tokens.get(ix4).trim());
+        						if(!publicacoes.isEmpty()) {
+	        						registraLog("Localizados: " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim());
+	        						relatorioDeClipping = relatorioDeClipping + "\n  Localizado(s):  " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim() + "\n\n"; 
+	        						Comuns.apresentaMenssagem("Localizados: " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim(), tipoProcessamento,"informativa", null);
+					        		localizados++;
 	
-	        			registraLog("Verificando se a edição: " + edicoesSelecionadas.get(ix3) + " já foi verificada para o tribunal " + cliente + "/" + tokenTribunal);
-	        			Comuns.apresentaMenssagem("Verificando se a edição:: " + cliente + "/" + tokenTribunal  + " já foi verificada para o tribunal ", tipoProcessamento,"informativa", null);
-	        			
-// verifica se a edição já foi clipada
-	        			if(conexao.verificaEdicaoNaoClipada(sessao, edicoesSelecionadas.get(ix3), cliente)) {
-	        				registraLog("A edição: " + edicoesSelecionadas.get(ix3) + "  ainda não foi verificada para o tribunal " + cliente + "/" + tokenTribunal);
-	        				Comuns.apresentaMenssagem("A edição: " + cliente + "/" + tokenTribunal  + " ainda não foi verificada.", tipoProcessamento,"informativa", null);
-	        				edicoesIndexadas[ix][0] = cliente;
-				        	edicoesIndexadas[ix][1] = edicoesSelecionadas.get(ix3);
-	        				ix++;
-	        				registraLog("Carregando tabela de tokens para o tribunal: " + cliente + "/" + tokenTribunal);
-				        	tokens = conexao.carregaTokensBatch(sessao, tabelasTokens.get(ix2));
-				        	
-				        	if(tokens.isEmpty()) {
-				        		registraLog("Nã há tokens na tabela de tokens para o tribunal: " + cliente + "/" + tokenTribunal);
-				        		linhasIndexadas = linhasIndexadas + "\n" + Comuns.obtemHrAtual() + " Nã há tokens na tabela de tokens para o tribunal:  " + cliente + "/" + tokenTribunal + " -> " + edicoesSelecionadas.size()+"\n"; 
-				        		continue;
-				        	} else {
-					        	totalTokens = tokens.size();
-					        	registraLog("Tokens carregados");
-					        	registraLog("Carregados " + totalTokens + " tokens desta tabela de tokens do tribunal: " + cliente + "/" + tokenTribunal);
-		        				edicaoRegistrada = false;
-		        				
-// procura por tokens
-		        				for(int ix4=0; ix4<=tokens.size()-1; ix4++) {				// ix4 - procura por cada token
-		        					publicacoes = conexao.localizaPublicacoes(sessao, edicoesSelecionadas.get(ix3), tokenTribunal, tokens.get(ix4).trim());
-		        					if(!publicacoes.isEmpty()) {
-		        						registraLog("Localizados: " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim());
-		        						linhasIndexadas = linhasIndexadas + "\n  Localizado(s):  " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim() + "\n\n"; 
-		        						Comuns.apresentaMenssagem("Localizados: " + publicacoes.size() + " publicações para o token: " + tokens.get(ix4).trim(), tipoProcessamento,"informativa", null);
-						        		localizados++;
-// registra publicações localizadas
-						        		for(int ix5=0; ix5<=publicacoes.size()-1; ix5++) {	// registra publicacoes localizadas
-				        					dupl = verificaDuplicidadeEditais(publicacoes.get(ix5));		        					
-				        					if(dupl >= 0) {
-				        						publicacoesLocalizadas[dupl][1] = publicacoesLocalizadas[dupl][1] + "\n" + tokens.get(ix4).trim();
-				        						registraLog("*** Publicação atualizada: " + publicacoesLocalizadas[publicacoesIncluidas][0] + " - " + publicacoesLocalizadas[publicacoesIncluidas][1]+"\n");
-k++;				        						
-				        					} else {		        					
-				        						publicacoesLocalizadas[publicacoesIncluidas][0] = publicacoes.get(ix5).trim();
-				            					publicacoesLocalizadas[publicacoesIncluidas][1] = tokens.get(ix4).trim();		            					            					
-				            					registraLog("+++ Publicação incluída: " + publicacoesLocalizadas[publicacoesIncluidas][0] + " - " + publicacoesLocalizadas[publicacoesIncluidas][1]+"\n"); 					
-				            					publicacoesIncluidas++;
-k++;
-				        					}		        					
-					        			}
-// fim do registro das publicações localizadas 
-k++;						        		
-				        			} else {
-				        				linhasIndexadas = linhasIndexadas + "Token não localizado: " + tokens.get(ix4).trim() + "\n";
-				        				registraLog("Token não localizado: " + tokens.get(ix4).trim());
-				        				Comuns.apresentaMenssagem("Token não localizado: " + tokens.get(ix4).trim(), tipoProcessamento,"informativa", null);
-				        				naoLocalizados++;
-				        			}
-k++;
-						        }												// fim do loop de publicacoes selecionadas
-// Fim da procura por tokens
-
-k++;
-		        				
-		                		if(localizados == 0) {
-		                			linha = ">>> " + cliente + "/" + tokenTribunal + "\t\t *** Nenhuma publicação selecionada ***";
-		                			registraLog("\">>> \" + cliente + \"/\" + tokenTribunal + \"\\t\\t *** Nenhuma publicação selecionada ***\"");
-		                			linhasIndexadas = linhasIndexadas + "\n" + linha + "\n";   
-		                			Comuns.apresentaMenssagem(linha, tipoProcessamento,"informativa", null);
-		                		} else {
-		                			totalPublicacoes = totalPublicacoes + publicacoesIncluidas;
-		                			linha = ">>> " + cliente + "-" + tokenTribunal + " - Total de tokens: " + totalTokens + " / Localizados: \t" + localizados + " / Não localizados: " + naoLocalizados + " / Publicações afetadas: " + publicacoesIncluidas;
-			        				registraLog("\">>> \" + cliente + \"-\" + tokenTribunal + \" - Total de tokens: \" + totalTokens + \" / Localizados: \\t\" + localizados + \" / Não localizados: \" + naoLocalizados + \" / Publicações afetadas: \" + publicacoesIncluidas");
-			        				linhasIndexadas = linhasIndexadas + linha + "\n";      		   		
-			                		Comuns.apresentaMenssagem(linha, tipoProcessamento,"informativa", null);
-		                			registraLog("Copiando publicações localizadas para o site do cliente.");
-		                			copiaPublicacoes(cliente, destino, tokenTribunal);
-		                			dummy = getDateTime().replace(":", "-");
-		                			dummy = getDateTime().replace("/", "-");
-		                			linhasIndexadas = linhasIndexadas + "\n-----------------------------------------------------------------\n";
-		                			registraLog("Gravando relatorio de indexação para o tribunal: " + cliente + "/" + tokenTribunal);
-		                			
-		                			dummy = getDateTime().replace("/", "-");
-		    	        			dummy = dummy.replace(":", "-");
-		    	        			dummy = dummy.replace(" ", "_");		                			
-		                			gravaArquivo(pastaLog + "/" + tokenTribunal + "-indexacao-" + dummy + ".txt",linhasIndexadas);
-		                			linhasIndexadas = "";
-		                			limparPublicacoesLocalizadas();
-		                		}
-		                		
+					        		for(int ix5=0; ix5<=publicacoes.size()-1; ix5++) {	// registra publicacoes localizadas
+			        					dupl = verificaDuplicidadeEditais(publicacoes.get(ix5));		        					
+			        					if(dupl >= 0) {
+			        						publicacoesLocalizadas[dupl][1] = publicacoesLocalizadas[dupl][1] + "\n" + tokens.get(ix4).trim();
+			        						registraLog("*** Publicação atualizada: " + publicacoesLocalizadas[publicacoesIncluidas][0] + " - " + publicacoesLocalizadas[publicacoesIncluidas][1]+"\n");		
+			        					} else {		        					
+			        						publicacoesLocalizadas[publicacoesIncluidas][0] = publicacoes.get(ix5).trim();
+			            					publicacoesLocalizadas[publicacoesIncluidas][1] = tokens.get(ix4).trim();		            					            					
+			            					registraLog("+++ Publicação incluída: " + publicacoesLocalizadas[publicacoesIncluidas][0] + " - " + publicacoesLocalizadas[publicacoesIncluidas][1]+"\n"); 					
+			            					publicacoesIncluidas++;
+			        					}		        					
+				        			}   
+					        		k++;
+	        					} else {
+	        						relatorioDeClipping = relatorioDeClipping + "Nenhuma publicação localizada para o token: " + tokens.get(ix4).trim() + "\n";
+			        				registraLog("Nenhuma publicação localizada para o token: " + tokens.get(ix4).trim());
+			        				Comuns.apresentaMenssagem("Nenhuma publicação localizada para o token: " + tokens.get(ix4).trim(), tipoProcessamento,"informativa", null);
+			        				naoLocalizados++;
+	        					}
+	        				} else {
+	        					Comuns.apresentaMenssagem("Edição sem pubicações: Tribunal:" + tribunal + "\n", tipoProcessamento,"informativa", null);
+	        					registraLog("Edição sem pubicações: Tribunal:" + tribunal);
+	        					relatorioDeClipping = relatorioDeClipping + "Edição sem pubicações: Tribunal:" + tribunal + "\n";
+	        					localizados = 0;
+	        					break;
 	        				}
-
-	        			} else {
-	        				k++;
-	        			}
-	        			
-	        		//	registraLog("Edições não indexadas para o tribunal " + cliente + "/" + tokenTribunal + "\n");
-	            	//	Comuns.apresentaMenssagem("Localizando não indexadas para o tribunal " + cliente + "/" + tokenTribunal, tipoProcessamento,"informativa", null);
-
-// Fim do loop de ediçoes selecionadas		
-	        		}														// fim do loop de edicoes selecionadas
-	        		//atualizaEdicoes(edicoesIndexadas);
-	        		//System.out.println("\n");
-	        		//localizados = 0;
-	        		//naoLocalizados = 0;
-k++;
-	        	}															// fim do loop de tabelas tokens
-        	} else {
-        		registraLog("Não existem tabelas tokens para processamento." + totalPublicacoes);
-        		Comuns.apresentaMenssagem("Não existem tabelas tokens para processamento.", tipoProcessamento, "informativa", null);
-        		linhasIndexadas = linhasIndexadas + "Não existem tabelas tokens para processamento." ;
-k++;
+        				}
+        				if(localizados == 0) {
+                			linha = ">>> " + cliente + "/" + tribunal + "\t\t *** Nenhuma publicação selecionada ***";
+                			registraLog("\">>> \" + cliente + \"/\" + tokenTribunal + \"\\t\\t *** Nenhuma publicação selecionada ***\"");
+                			relatorioDeClipping = relatorioDeClipping + "\n" + linha + "\n";   
+                			Comuns.apresentaMenssagem(linha, tipoProcessamento,"informativa", null);
+                		} else {
+                			totalPublicacoes = totalPublicacoes + publicacoesIncluidas;
+                			linha = ">>> " + cliente + "-" + tribunal + " - Total de tokens: " + totalTokens + " / Localizados: \t" + localizados + " / Não localizados: " + naoLocalizados + " / Publicações afetadas: " + publicacoesIncluidas;
+	        				registraLog("\">>> \" + cliente + \"-\" + tokenTribunal + \" - Total de tokens: \" + totalTokens + \" / Localizados: \\t\" + localizados + \" / Não localizados: \" + naoLocalizados + \" / Publicações afetadas: \" + publicacoesIncluidas");
+	        				relatorioDeClipping = relatorioDeClipping + linha + "\n";      		   		
+	                		Comuns.apresentaMenssagem(linha, tipoProcessamento,"informativa", null);
+                			registraLog("Copiando publicações localizadas para o site do cliente.");
+                			copiaPublicacoes(cliente, destino, tribunal);
+                			dummy = getDateTime().replace(":", "-");
+                			dummy = getDateTime().replace("/", "-");
+                			relatorioDeClipping = relatorioDeClipping + "\n-----------------------------------------------------------------\n";
+                			registraLog("Gravando relatorio de indexação para o tribunal: " + cliente + "/" + tribunal);
+                			limparPublicacoesLocalizadas();					                			
+                		}	
+		        	} else {
+		        		registraLog("Tabela de tokens estar vazia: " + cliente + "/" + tribunal);
+    	        		Comuns.apresentaMenssagem("Tabela de tokens estar vazia: " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+    	        		relatorioDeClipping = relatorioDeClipping + "\n" + Comuns.obtemHrAtual() + " - Tabela de tokens estar vazia: " + cliente + "/" + tribunal + " -> " + edicoesSelecionadas.size()+"\n";    
+		        	}
+    			} else {
+    				registraLog("Edição já com clipping já processado: " + cliente + "/" + tribunal);
+	        		Comuns.apresentaMenssagem("Edição já com clipping já processado: " + cliente + "/" + tribunal, tipoProcessamento,"informativa", null);
+	        		relatorioDeClipping = relatorioDeClipping + "\n" + Comuns.obtemHrAtual() + " - Edição já com clipping já processado: " + cliente + "/" + tribunal + " -> " + edicoesSelecionadas.size()+"\n";    
+    			}
+    		} else {
+    			registraLog("Só pode existir uma tabela de tokens para:" + cliente + "/" + tribunal);
+        		Comuns.apresentaMenssagem("Só pode existir uma tabela de tokens para:" + cliente + "/" + tribunal, tipoProcessamento, "informativa", null);
+        		relatorioDeClipping = relatorioDeClipping + "Só pode existir uma tabela de tokens para:" + cliente + "/" + tribunal;
         	}
-        	linhasIndexadas = linhasIndexadas + "Total de publicações selecionadas: " + totalPublicacoes;
-        	registraLog("Total de publicações selecionadas: " + totalPublicacoes);
-        	Comuns.apresentaMenssagem("Total de publicações selecionadas: " + publicacoesIncluidas + "\n", tipoProcessamento, "informativa", null);
-        	Comuns.gravaLog(pastaLog, Comuns.obtemHrAtual().replace(":", ""), "ClipB",log);
-k++;
-        }																	// fim do loop de clientes
-    	registraLog("Atualizando edições clipadas.");
- 
- // ATENÇÃO
-    	atualizaEdicoes(edicoesIndexadas); 	
-    	registraLog("Fim do processamento." + totalPublicacoes);
-        Comuns.apresentaMenssagem("Fim do processo de Clipping.", tipoProcessamento, "informativa", null);
-k++;
+    	} else {
+    		registraLog("Não existe tabela de tokens para:" + cliente + "/" + tribunal);
+    		Comuns.apresentaMenssagem("Não existe tabela de tokens para:" + cliente + "/" + tribunal, tipoProcessamento, "informativa", null);
+    		relatorioDeClipping = relatorioDeClipping + "Não existem tabela de tokens para:" + cliente + "/" + tribunal;
+    	}
     }
     
     private static void registraLog(String registroLog) {
@@ -393,7 +363,7 @@ k++;
 		return completaEsquerda(hr,'0',2)+":"+completaEsquerda(mn,'0',2)+":"+completaEsquerda(sg, '0', 2);
 	}
     
-    private static void gravaLogClipagem(List<String> log, String arquivoLog) throws IOException {
+    private static void gravaLog(List<String> log, String arquivoLog) throws IOException {
     	StringBuilder blocoTexto = new StringBuilder();
 		String bufferSaida = "";
 		blocoTexto.append(log);
@@ -440,19 +410,21 @@ k++;
 
 			if(!InterfaceServidor.copiaPublicacao(sessao, publicacoesLocalizadas[ix][0], pastaCarregamento+"/"+pastaNome, destino+"/"+pastaNome+"X", nomePublicacao, cliente)) {
 			//	Comuns.apresentaMenssagem("Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0], tipoProcessamento,"informativa", null);
-			//	linhasIndexadas = linhasIndexadas +  "Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0] + "\n";
+			//	relatorioDeClipping = relatorioDeClipping +  "Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0] + "\n";
 				registraLog("Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0]);
-				dupl = verificaDuplicidadeEditais(publicacoesLocalizadas[ix][0]);			
+				dupl = verificaDuplicidadeEditais(publicacoesLocalizadas[ix][0]);
 			}
 
 			queryString = "SELECT cmis:objectId FROM cmis:document WHERE in_folder('" + idPastaDestino + "') AND cmis:name='" + nomePublicacao + "' AND cmis:lastModifiedBy='sij'";
 			queryString = trataQueryString(queryString);
-			idPubicacaoCopiada = InterfaceServidor.getFileId(sessao, queryString);
+			idPubicacaoCopiada = conexao.getFileId(sessao, queryString);
+						
+//			idPubicacaoCopiada = InterfaceServidor.getFileId(sessao, idPastaDestino, nomePublicacao);
 
 			descricao = "Publicação localizada - TRT: " + tribunal + "ª Região - edição: "  + strEdicao + "\n\n" +
 						" **** Tokens Localizados ****" + "\n" + publicacoesLocalizadas[ix][1];
 			registraLog(cliente + " - Publicação incluída na site do cliente: " + cliente + " - " + nomePublicacao);
-			linhasIndexadas = linhasIndexadas + " - Publicações incluída na site do cliente: " + cliente + " - " + nomePublicacao + "\n";
+			//relatorioDeClipping = relatorioDeClipping + " - Publicações incluída na site do cliente: " + cliente + " - " + nomePublicacao + "\n";
 			Comuns.apresentaMenssagem(" - Publicação incluída no site do cliente: " + cliente + " - " + nomePublicacao, tipoProcessamento,"informativa", null);			
 			InterfaceServidor.atualizaPublicacaoClipada(sessao, idPubicacaoCopiada, descricao, cliente, publicacoesLocalizadas[ix][1]);
 		}
@@ -502,19 +474,7 @@ k++;
     	}
     	return -1;
     }
-    
-    private static void atualizaEdicoes(String [][] edicoesIndexados) throws Exception {
-    	int ix = 0;
-    	while(edicoesIndexados[ix][0] != null) {
-    		if(edicoesIndexados[ix][0] == null) {
-    			break;
-    		} else {
-    			InterfaceServidor.atualizaEdicaoClipada(sessao, edicoesIndexados[ix][0], edicoesIndexados[ix][1]);
-    		}
-    		ix++;
-    	}
-    }
-    
+ 
     private static void limparPublicacoesLocalizadas() {
     	for(int ix=0; ix<=publicacoesLocalizadas.length-1; ix++) {
     		publicacoesLocalizadas[ix][0] = null;
@@ -532,4 +492,20 @@ k++;
 		bw.write(bufferSaida);
 		bw.close();
 	}
+    
+    private static void reverterEdicoes(String edicao) throws ParseException {
+    	
+    	/*
+    	 * Para casos de ser necessário reverter o processamento do clipping
+    	 */
+    	
+    	List <String> edicoesParaReverter = new ArrayList<String>();
+    	edicoesParaReverter = conexao.listarEdicoesPorEdicao(sessao, edicao);
+    	if(edicoesParaReverter.size()>0) {
+    		for(int ix=0; ix<= edicoesParaReverter.size()-1; ix++) {
+    			conexao.reverteEdicaoProcessada(sessao, edicoesParaReverter.get(ix));
+    		}	
+    	}  
+    	k++;
+    }
 }

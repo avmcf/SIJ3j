@@ -196,6 +196,11 @@ package com.vconsulte.sij.base;
 //					- SplitDO: Atualização na regra de quebra de processo 
 //					- SplitDO: Atualização na regra de tratamento de atores, para prever fim dos atores sem a marca "intimados"
 //
+//	versao 2.6		- 31 de março 2021
+//					- Correções na versão 2.5.3a
+//					- Correções na finalização das publicações
+//					- Inclusão do resumo com quantidade de publicações processadas
+//
 //
 // **************************************
 // **** ÚLTIMA VERSÃO FORNECIDA A JAQ ***
@@ -215,7 +220,7 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.5.3a";
+    public static final String VERSAOSPLITER 			= "2.6";
     public static final String FONTSIZE 				= "9";
     public static final String FONT 					= "HELVETICA";
     public static final String FONTCOLOR 				= "BLUE";
