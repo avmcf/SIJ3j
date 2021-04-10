@@ -750,11 +750,11 @@ public class InterfaceServidor extends Base {
     	return id;
 	}
 	
-//	public static String getFileId(Session session, String queryString) {
-	public static String getFileId(Session session, String idFile) {
-		//String idFile = null;
+	public static String getFileId(Session session, String queryString) {
+//	public static String getFileId(Session session, String idFile) {
+		String idFile = null;
 		List <String> resultados = new ArrayList<String>();		
-		String queryString = "SELECT cmis:objectId,cmis:name FROM cmis:document WHERE cmis:objectId = '" + idFile + "'";    
+//		String queryString = "SELECT cmis:objectId,cmis:name FROM cmis:document WHERE cmis:objectId = '" + idFile + "'";    
 		ItemIterable<QueryResult> results = session.query(queryString, false);
     	for (QueryResult qResult : results) {
     		resultados.add(qResult.getPropertyValueByQueryName("cmis:objectId").toString());
