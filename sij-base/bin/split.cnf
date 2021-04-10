@@ -1,13 +1,13 @@
 0001
 LOCAL
 LINUX
-http://192.168.15.9:8080
-/Users/avmcf/sandbox/logs
-/User Homes/sij/EdicoesSIJ
-/Sites/site-de-teste/documentLibrary/Publicacoes
-/Sites/site-de-teste/documentLibrary/Tokens
-/Users/avmcf/sandbox/publicacoes
+http://192.168.1.30:8080
 /Users/avmcf/sandbox/edicoes
+/User Homes/sij/EdicoesSIJ
+/Sites/jairo-aquino-advogados/documentLibrary/Publicacoes
+/Sites/jairo-aquino-advpgados/documentLibrary/Tokens
+/Users/avmcf/sandbox/publicacoes
+/home/sij
 /Users/avmcf/sandbox/edicoes
 Publicação
 BATCH

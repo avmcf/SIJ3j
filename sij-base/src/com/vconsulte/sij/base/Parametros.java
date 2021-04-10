@@ -201,6 +201,12 @@ package com.vconsulte.sij.base;
 //					- Correções na finalização das publicações
 //					- Inclusão do resumo com quantidade de publicações processadas
 //
+//	versao clipping 	2.6
+// 	versao cleaner 		2.6
+//	versao spliter 		2.6.1	- 10 de abril 2021
+//								- correções no método carregarIndice
+//								- inclusão do método posicionarIndice
+//
 //
 // **************************************
 // **** ÚLTIMA VERSÃO FORNECIDA A JAQ ***
@@ -220,7 +226,9 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.6";
+    public static final String VERSAOSPLITER 			= "2.6.1";
+    public static final String VERSAOCLIPPING 			= "2.6";
+    public static final String VERSAOCLEANER 			= "2.6";
     public static final String FONTSIZE 				= "9";
     public static final String FONT 					= "HELVETICA";
     public static final String FONTCOLOR 				= "BLUE";
@@ -310,6 +318,8 @@ public class Parametros {
         TABELAUTORES.add("solicitados");
         TABELAUTORES.add("solicitante");
         TABELAUTORES.add("solicitantes");
+        TABELAUTORES.add("suscitado");
+        TABELAUTORES.add("suscitada");
         TABELAUTORES.add("polo ativo");
         TABELAUTORES.add("polo passivo");
         TABELAUTORES.add("primeiro interessado");

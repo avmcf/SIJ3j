@@ -202,6 +202,11 @@ package com.vconsulte.sij.splitter;
 //					- Correções na finalização das publicações
 //					- Inclusão do resumo com quantidade de publicações processadas
 //
+// versao 2.6.1		- 10 de abril 2021
+//					- correções no método carregarIndice
+//					- inclusão do método posicionarIndice
+// 					- utilização do método Comuns.apresentamensagem
+//
 // 	V&C Consultoria Ltda.
 // 	Autor: Arlindo Viana.
 //***************************************************************************************************
@@ -436,9 +441,9 @@ public class SplitDO  {
 		String dummy = args.toString();
 /*
 		try {
-			apresentaMenssagem("Processamento com argumentos");
+			Comuns.apresentaMenssagem("Processamento com argumentos");
 		} catch (ArrayIndexOutOfBoundsException aiofbex) {
-			apresentaMenssagem("Processamento sem argumentos");
+			Comuns.apresentaMenssagem("Processamento sem argumentos");
         }
 */		
 
@@ -488,23 +493,23 @@ public class SplitDO  {
 		com.vconsulte.sij.base.Parametros.carregaTabelas();
 		registraLog("Parametros Carregados");
 		
-		apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
-		apresentaMenssagem("SplitDO " + versaoSplitter + " - Separação de Publicações.", "informativa", null);
-		apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
-		apresentaMenssagem("\t\tParametros do processamento " , "informativa", null);
-		apresentaMenssagem("Grupo para processamento: " + grupo, "informativa", null);
-		apresentaMenssagem("Pasta Carregamento: " + pastaCarregamento, "informativa", null);
-		apresentaMenssagem("Tipo Documento: " + tipoDocumento, "informativa", null);
-		apresentaMenssagem("Pasta Saida: " + pastaSaida, "informativa", null);
-		apresentaMenssagem("Log Folder: " + logFolder, "informativa", null);
-		apresentaMenssagem("Pasta Edicoes: " + pastaEdicoes, "informativa", null);
-		apresentaMenssagem("Pasta de Edicoes PDF: " + pastaDeEdicoes, "informativa", null);
-		apresentaMenssagem("Indice XML: " + pastaIndiceXML, "informativa", null);
+		Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("SplitDO " + versaoSplitter + " - Separação de Publicações.", tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("\t\tParametros do processamento " , tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Grupo para processamento: " + grupo, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Pasta Carregamento: " + pastaCarregamento, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Tipo Documento: " + tipoDocumento, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Pasta Saida: " + pastaSaida, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Log Folder: " + logFolder, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Pasta Edicoes: " + pastaEdicoes, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Pasta de Edicoes PDF: " + pastaDeEdicoes, tipoProcessamento, "informativa", null);
+		Comuns.apresentaMenssagem("Indice XML: " + pastaIndiceXML, tipoProcessamento, "informativa", null);
 
 
 		if(tipoConexao.equals("REMOTO")) {
 			if (!conectaServidor()) { 
-				apresentaMenssagem("Falha na conexão com o Servidor.", "erro", null);
+				Comuns.apresentaMenssagem("Falha na conexão com o Servidor.", tipoProcessamento, "erro",  null);
 				gravaIndiceXML();
 				finalizaProcesso();
 			}
@@ -512,7 +517,7 @@ public class SplitDO  {
 		
 		if(tipoConexao.equals("REMOTO")) {
 			tabelaAssuntos = conexao.carregaAssuntosRemoto(sessao);
-			apresentaMenssagem("Tabela de assuntos carregada.", "informativa", null);
+			Comuns.apresentaMenssagem("Tabela de assuntos carregada.", tipoProcessamento, "informativa", null);
 		} else {
 			carregaAssuntosLocal();
 			registraLog("Tabela local de assuntos carregada");
@@ -526,9 +531,9 @@ public class SplitDO  {
 			Comuns.finalizaProcesso(tipoProcessamento);
 		} else {
 			if(tipoProcessamento.equals("BATCH")) {
-				apresentaMenssagem("Processamento em modo Batch", "informativa", null);
+				Comuns.apresentaMenssagem("Processamento em modo Batch", tipoProcessamento, "informativa", null);
 				registraLog("Processamento em modo Batch");
-				apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
+				Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
 				conectaServidor();
 				 
 				for(int ix=0;ix<=parametros.length-1;ix++) {
@@ -536,13 +541,13 @@ public class SplitDO  {
 					if(!idEdicao.equals("*")) {
 						BaixaConteudo.baixaConteudo(sessao, idEdicao, parametros[ix], pastaEdicoes);
 						registraLog("\nDownload da edição do tribunal: " + parametros[ix] + " realizado");
-						apresentaMenssagem("Download da edição do tribunal: " + parametros[ix] + " realizado", "informativa", null);
+						Comuns.apresentaMenssagem("Download da edição do tribunal: " + parametros[ix] + " realizado", tipoProcessamento, "informativa", null);
 						edicoesProcessadas.add(idEdicao);
 						tribunaisProcessados++;
 					} else {
 						registraLog("Não houve edição para o tribunal: " + parametros[ix]);
 						resumoPublicacoes.add("Não houve edição para o tribunal: " + parametros[ix]);
-						apresentaMenssagem("Não houve edição para o tribunal: " + parametros[ix], "informativa", null);
+						Comuns.apresentaMenssagem("Não houve edição para o tribunal: " + parametros[ix], tipoProcessamento, "informativa", null);
 					}
 					tribunaisSolicitados = tribunaisSolicitados + "-" + parametros[ix];
 				}
@@ -570,8 +575,8 @@ public class SplitDO  {
 						continue;
 					} else {
 						registraLog("*** PROCESSAMENTO DA EDIÇÃO: " + dummy + " ***");
-						apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
-						apresentaMenssagem("Arquivo: " + dummy, "informativa", null);
+						Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
+						Comuns.apresentaMenssagem("Arquivo: " + dummy, tipoProcessamento, "informativa", null);
 						separaPublicacoes(file);
 						qdtPublicacoes = sequencialSaida-1;
 						resumoPublicacoes.add("Total de publicações processadas para o tribunal: " + strTribunal + " " + qdtPublicacoes + " publicações");
@@ -579,8 +584,8 @@ public class SplitDO  {
 				} else {	
 					if(verificaParametros(dummy.substring(0, 2))) {
 						registraLog("*** PROCESSAMENTO DA EDIÇÃO: " + dummy + " ***");
-						apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
-						apresentaMenssagem("Arquivo: " + dummy, "informativa", null);						
+						Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
+						Comuns.apresentaMenssagem("Arquivo: " + dummy, tipoProcessamento, "informativa", null);						
 						separaPublicacoes(file);
 						qdtPublicacoes = sequencialSaida-1;
 						resumoPublicacoes.add("Total de publicações processadas para o tribunal: " + strTribunal + " " + qdtPublicacoes + " publicações");
@@ -654,7 +659,7 @@ public class SplitDO  {
 		registraLog("\tTipo Arquivo Saida: " + com.vconsulte.sij.base.Parametros.TIPOARQUIVOSAIDA);
 		registraLog("\tPasta de Edicoes: " + com.vconsulte.sij.base.Parametros.PASTADEEDICOES+"\n");
 		registraLog("separaPublicacoes - Início");
-		apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
+		Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
 
 		String strDummy = "";
 		String dummy = "";
@@ -685,7 +690,7 @@ public class SplitDO  {
 			paragrafos.clear();
 			
 			if(!carregaEdicao(edicao)){
-				apresentaMenssagem("Edição do Diário Oficial não contém publicações.", "informativa", null);
+				Comuns.apresentaMenssagem("Edição do Diário Oficial não contém publicações.", tipoProcessamento, "informativa", null);
 			} else {
 				carregaIndice();
 				mapeiaLinhas();		
@@ -710,16 +715,16 @@ public class SplitDO  {
 			        
 			        titulo5 = bufferEntrada.get(4).trim();
 					if (strTribunal.equals("00")) {
-						apresentaMenssagem("\n" + "TST -"+" Edição: " + dataEdicao, "informativa", null);
+						Comuns.apresentaMenssagem("\n" + "TST -"+" Edição: " + dataEdicao, tipoProcessamento, "informativa", null);
 						edtFolderName = "\n" + "TST - " + seqEdicao;
 						descricaoFolder = "\n" + "TST - Edição:" + dataEdicao;
 					} else {
-						apresentaMenssagem("Início da separação das publicações (TRT "+strTribunal+"ª Região "+" Edição: " + dataEdicao + ")", "informativa", null);
+						Comuns.apresentaMenssagem("Início da separação das publicações (TRT "+strTribunal+"ª Região "+" Edição: " + dataEdicao + ")", tipoProcessamento, "informativa", null);
 						edtFolderName = "TRT - " + strTribunal + "-" + seqEdicao;
 						descricaoFolder = "TRT " + strTribunal + "ª Região" + " - " + dataEdicao;
 					}
 		        } else {
-		        	apresentaMenssagem("Arquivo com Diário Oficial não reconhecido", "informativa", null);
+		        	Comuns.apresentaMenssagem("Arquivo com Diário Oficial não reconhecido", tipoProcessamento, "informativa", null);
 					finalizaProcesso();    	
 		        }
         
@@ -761,8 +766,8 @@ public class SplitDO  {
 		    		registraLog("-----------------------------------------------------------------------------");
 		    		registraLog("*** Início da publicação nº " + sequencialSaida + " iniciado. ***");
 		    		registraLog("Seção -> " + secao + " - sequencial: " + sequencial);
-		    	//	apresentaMenssagem("-----------------------------------------------------------------------------");
-		    	//	apresentaMenssagem("TRT " + tribunal + "ª região - Local: " + secao + " - pg: " + Indice.paginaSecao + " / " + ultimaPagina);
+		    	//	Comuns.apresentaMenssagem("-----------------------------------------------------------------------------");
+		    	//	Comuns.apresentaMenssagem("TRT " + tribunal + "ª região - Local: " + secao + " - pg: " + Indice.paginaSecao + " / " + ultimaPagina);
 		    		if(Indice.complementoSecao != null && !Indice.complementoSecao.equals("complemento")) {
 						secao = secao + " " + Indice.complementoSecao;
 					}
@@ -800,7 +805,7 @@ public class SplitDO  {
 		    			}
 		        	}
 		    		
-		    		//apresentaMenssagem("Grupo: " + grupo);
+		    		//Comuns.apresentaMenssagem("Grupo: " + grupo);
 		    		registraLog("Grupo -> "+ grupo + " - sequencial: " + sequencial + " - pg: " + Indice.paginaSecao + " / " + ultimaPagina);
 		    		limiteGrupo = localizaProximoGrupo(sequencial);
 		    		if(limiteGrupo == -1) limiteGrupo = ultimaLinha;
@@ -1082,11 +1087,11 @@ public class SplitDO  {
 	
 	catch (IOException erro) {
 
-		apresentaMenssagem("Erro no processamento do intermedio: ", "erro", erro.toString());
+		Comuns.apresentaMenssagem("Erro no processamento do intermedio: ", tipoProcessamento, "erro",  erro.toString());
 	}
 
-	apresentaMenssagem("Fim do processamnto da edição: " + edicao, "informativa", null);
-	apresentaMenssagem("------------------------------------------------------------------------------\n\n", "informativa", null );	
+	Comuns.apresentaMenssagem("Fim do processamnto da edição: " + edicao, tipoProcessamento, "informativa", null);
+	Comuns.apresentaMenssagem("------------------------------------------------------------------------------\n\n", tipoProcessamento, "informativa", null );	
 	renomeiaEdicao(edicao);
 	//System.exit(0);
 	}						// <==== fim do método processaEdicao
@@ -1094,10 +1099,6 @@ public class SplitDO  {
 	private static void renomeiaEdicao(File arquivo) {
 		File arquivo2 = new File(arquivo + "_rep" );
 		arquivo.renameTo(arquivo2);
-	}
-	
-	private static void apresentaMenssagem(String mensagem, String tipoMensagem, String erro) {
-		Comuns.apresentaMenssagem(mensagem, tipoProcessamento, tipoMensagem, erro);	
 	}
 
 	private static boolean verificaMaiuscula(String linhaDummy) {
@@ -2661,11 +2662,11 @@ public class SplitDO  {
 	private static void finalizaProcesso() throws IOException {
 		
 		if(tipoProcessamento.equals("DESKTOP")){
-			apresentaMenssagem("Fim do processamento, incluidos " + totalPublicacoes + "no servidor","informativo",null);
-			apresentaMenssagem("Fim do Processamento","final",null);
+			Comuns.apresentaMenssagem("Fim do processamento, incluidos " + totalPublicacoes + "no servidor", tipoProcessamento, "informativo",null);
+			Comuns.apresentaMenssagem("Fim do Processamento", tipoProcessamento, "final",null);
 		} else if(tipoProcessamento.equals("BATCH")) {
-			apresentaMenssagem("\"Criados \" + totalPublicacoes + \"publicacoes\"","informativa", null);
-			apresentaMenssagem("Fim do Processamento", "informativa", null);
+			Comuns.apresentaMenssagem("\"Criados \" + totalPublicacoes + \"publicacoes\"", tipoProcessamento, "informativa", null);
+			Comuns.apresentaMenssagem("Fim do Processamento", tipoProcessamento, "informativa", null);
 		}
 		gravaIndiceXML();
         System.exit(0);
@@ -2673,7 +2674,7 @@ public class SplitDO  {
 		
 	private static boolean conectaServidor() throws IOException {
 		registraLog("Conexão com o servidor.\n");
-		apresentaMenssagem("Conexão com o servidor.", "informativa", null);
+		Comuns.apresentaMenssagem("Conexão com o servidor.", tipoProcessamento, "informativa", null);
 		conexao.setUser(usuario);
 		conexao.setPassword(password);
 		conexao.setUrl(url);
@@ -2691,7 +2692,7 @@ public class SplitDO  {
 		int numPaginas = 0;
 		registraLog("Início da carga do PDF da edição (carregaEdicao)");
 	    String texto = "";
-		apresentaMenssagem("Carregando edição.", "informativa", null);
+		Comuns.apresentaMenssagem("Carregando edição.", tipoProcessamento, "informativa", null);
 		try {
 			PDDocument pd = PDDocument.load(input);
 			numPaginas = pd.getNumberOfPages();
@@ -2699,17 +2700,17 @@ public class SplitDO  {
 	        	PDFTextStripper stripper = new PDFTextStripper();	       
 	        	texto = stripper.getText(pd);
 	        	separaLinhas(texto);
-	        	apresentaMenssagem("Fim do carregamento da edição.", "informativa", null);	
+	        	Comuns.apresentaMenssagem("Fim do carregamento da edição.", tipoProcessamento, "informativa", null);	
 	    		registraLog("Fim da carga do PDF da edição (carregaEdicao)");
 	        	retorno = true;
 			} else {
-				apresentaMenssagem("Edição sem publicações.", "informativa", null);	
+				Comuns.apresentaMenssagem("Edição sem publicações.", tipoProcessamento, "informativa", null);	
 	    		registraLog("(carregaEdicao) Edição sem publicações - nº de paginas: " + numPaginas);
 			}
 	        pd.close();
 	    }
 	    catch (IOException erro) {
-	    	apresentaMenssagem("Erro no carregamento do Diário Oficial  -> ", "erro", erro.toString());
+	    	Comuns.apresentaMenssagem("Erro no carregamento do Diário Oficial  -> ", tipoProcessamento, "erro",  erro.toString());
 	    }
 		return retorno;
 	}
@@ -2868,6 +2869,22 @@ public class SplitDO  {
         }
     return palavraFormatada;  
     }
+	
+	private static int posicionaIndice() { 
+		registraLog("Posicionando início do indice");
+		int ultimaLinha = bufferEntrada.size()-1;
+
+		for(int x=0; x<=2000; x++) {
+			if(bufferEntrada.get(ultimaLinha).equals("SUMÁRIO")) {
+				registraLog("Início do indice localizado");
+				return ultimaLinha;
+			}
+			ultimaLinha--;
+		}
+		registraLog("Início do indice não localizado");
+		return -1;
+		
+	}
 
 	private static void carregaIndice() throws Exception {
 		registraLog("Início do carregamento do indíce da edição");
@@ -2886,18 +2903,19 @@ public class SplitDO  {
 		boolean continua = false;
 		boolean ehGrupo = false;
 
-		sequencialIndice = bufferEntrada.indexOf("SUMÁRIO")+1;
+		//sequencialIndice = bufferEntrada.indexOf("SUMÁRIO")+1;
+		sequencialIndice = posicionaIndice()+1;
 		bufferEntrada.remove(sequencialIndice-1);
 		sequencialIndice--;
 		Index.clear();
-		apresentaMenssagem("Início do carregamento do índice desta edição.", "informativa", null);
-		
+		Comuns.apresentaMenssagem("Início do carregamento do índice desta edição.", tipoProcessamento, "informativa", null);
+
 		try {
 		
 			if(sequencialIndice > 0) {
 				while(sequencialIndice <= bufferEntrada.size()-1) {	
 					linha = carregaLinhaIndice();
-					seq = seqIndex;
+					seq = seqIndex;	
 					if(linha.charAt(0) == ' ')  {
 						ehGrupo = true;
 					}	
@@ -2967,14 +2985,14 @@ public class SplitDO  {
 					}
 				}	// fim do while
 			} else {
-				apresentaMenssagem("Índice do Diário Oficial não localizado ", "erro", null);
+				Comuns.apresentaMenssagem("Índice do Diário Oficial não localizado ", tipoProcessamento, "erro",  null);
 				finalizaProcesso();
 			}
 		}  catch (Exception e) {
-			apresentaMenssagem("Erro na indexação: " + e.toString(), "erro", null);
+			Comuns.apresentaMenssagem("Erro na indexação: " + e.toString(), tipoProcessamento, "erro",  null);
             e.printStackTrace();
         }
-		apresentaMenssagem("Fim do carregamento do índice desta edição.", "informativa", null);
+		Comuns.apresentaMenssagem("Fim do carregamento do índice desta edição.", tipoProcessamento, "informativa", null);
 		registraLog("Fim do carregamento do indíce da edição");
 	}							
 		
@@ -3293,7 +3311,7 @@ public class SplitDO  {
 		String linha = "";
 		String secaoAnterior = " ";
 		String linhaDummy = "";
-		apresentaMenssagem("Início do mapeamento de linhas.", "informativa", null);
+		Comuns.apresentaMenssagem("Início do mapeamento de linhas.", tipoProcessamento, "informativa", null);
         for (IndiceEdicao Indice : Index) {								// loop do Index
         	if(!secaoAnterior.equals(Indice.secao)){
         		secaoAnterior = "";
@@ -3382,8 +3400,8 @@ public class SplitDO  {
 		        }
         	}				// fim do while
         }					// fim do for
-        apresentaMenssagem("Fim do mapeamento de linhas.", "informativa", null);
-        apresentaMenssagem("-----------------------------------------------------------------------------", "informativa", null);
+        Comuns.apresentaMenssagem("Fim do mapeamento de linhas.", tipoProcessamento, "informativa", null);
+        Comuns.apresentaMenssagem("-----------------------------------------------------------------------------", tipoProcessamento, "informativa", null);
         registraLog("Fim do mapeamento de linhas.");
 	}
 		
@@ -3779,7 +3797,7 @@ public class SplitDO  {
 					registraLog("++++ publicação " + sequencialSaida + " enviada com sucesso ++++");
 				}
 			} else {
-				apresentaMenssagem("Houve erro na gravação da publicação Nº " + sequencialSaida + " Gravado com sucesso", "informativa", null);
+				Comuns.apresentaMenssagem("Houve erro na gravação da publicação Nº " + sequencialSaida + " Gravado com sucesso", tipoProcessamento, "informativa", null);
 				registraLog("@@@ Erro no envio da publicação @@@" + sequencialSaida );
 				finalizaProcesso();
 			}
@@ -4189,7 +4207,7 @@ public class SplitDO  {
             } 
             folder.mkdir();     
         } catch (Exception erro) {
-        	apresentaMenssagem("Falha ao criar pasta no repositório", "erro", erro.toString() );
+        	Comuns.apresentaMenssagem("Falha ao criar pasta no repositório", tipoProcessamento, "erro",  erro.toString() );
         }
     }
 	

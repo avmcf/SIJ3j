@@ -153,6 +153,8 @@ public class Clippingb {
 		 * reverterEdicoes("26-02-2021");	-> informe a data da edição a ser revertida
 		 * 
 		 */
+		
+		//reverterEdicoes("05-03-2021");
 
 		if(parametros.length>0) {
 			for(int ix=0; ix<=parametros.length-1;ix++) {
@@ -379,6 +381,7 @@ public class Clippingb {
     	String descricao;
     	String strEdicao;
     	String nomePublicacao;
+    	String dummy = "";
     	Folder idPastaDestino;
     	String idPubicacaoCopiada;
     	String queryString;
@@ -406,8 +409,11 @@ public class Clippingb {
 	        strEdicao = strEdicao.substring(8, 10) + "-" + strEdicao.substring(5, 7) + "-" + strEdicao.substring(0, 4);
 	        edtFolderName = pastaNome;
 	        descricao = "Publicações localizadas para o TRT: " + tribunal + "ª Região";
-			idPastaDestino = InterfaceServidor.verificaPastaPublicacao(sessao,  destino, pastaNome+"X", descricao, tribunal, edicao, cliente, strEdicao);
-
+	        idPastaDestino = InterfaceServidor.verificaPastaPublicacao(sessao,  destino, pastaNome+"X", descricao, tribunal, edicao, cliente, strEdicao);
+			
+	        dummy = idPastaDestino.toString().replaceAll("[(:)]","");
+			dummy = dummy.replaceAll("[CMIS_FOLDER]","");
+			
 			if(!InterfaceServidor.copiaPublicacao(sessao, publicacoesLocalizadas[ix][0], pastaCarregamento+"/"+pastaNome, destino+"/"+pastaNome+"X", nomePublicacao, cliente)) {
 			//	Comuns.apresentaMenssagem("Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0], tipoProcessamento,"informativa", null);
 			//	relatorioDeClipping = relatorioDeClipping +  "Publicação copiada -->" + ix + "-" + publicacoesLocalizadas[ix][0] + "\n";
