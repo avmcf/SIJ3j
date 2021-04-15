@@ -202,10 +202,20 @@ package com.vconsulte.sij.splitter;
 //					- Correções na finalização das publicações
 //					- Inclusão do resumo com quantidade de publicações processadas
 //
-// versao 2.6.1		- 10 de abril 2021
+// 	versao 2.6.1	- 10 de abril 2021
 //					- correções no método carregarIndice
 //					- inclusão do método posicionarIndice
 // 					- utilização do método Comuns.apresentamensagem
+//
+//	versao 2.7		- 16 de abril 2021
+//					- Inclusão de méteodo formataBufferEntrada() para formatar o bufferEntrada 
+//
+//
+//
+//
+//
+//
+//
 //
 // 	V&C Consultoria Ltda.
 // 	Autor: Arlindo Viana.
@@ -302,6 +312,7 @@ public class SplitDO  {
 	static List <String> assuntosUtilizados = new ArrayList<String>();
 	static List <String> continuacoesPossiveis = new ArrayList<String>();
 	static List <String> bufferEntrada = new ArrayList<String>();
+	static List <String> bufferFormatado = new ArrayList<String>();
 	static List <String> tabelaAtores = com.vconsulte.sij.base.Parametros.TABELAUTORES;
 	static List <String> juridiques = com.vconsulte.sij.base.Parametros.JURIDIQUES;
 	static List <String> falsoFinal = com.vconsulte.sij.base.Parametros.FALSOFINAL;
@@ -639,6 +650,53 @@ public class SplitDO  {
 		String pastaId = obterIdPastasDeEdicoes();
 		InterfaceServidor.atualizaPastaEdicao(sessao, pastaId, "processado", "");
 	}
+	
+	private static void formataBufferEntrada() {
+		registraLog(" Inicio da formatação do buffer de entrada\n");
+		Comuns.apresentaMenssagem("Início da fase de formatação", tipoProcessamento, "informativa", null);
+		String dummy = "";
+		for(int x = 0; x<=bufferEntrada.size()-1; x++) {					
+			dummy = bufferEntrada.get(x);
+
+			//------------------------------------------------------------------------------------------------------
+			if(dummy.startsWith("Processo Nº")) {									// formatação de nº de processo
+				if(!verificaSeLinhaTemNumProcesso(dummy) && somenteNumeros(bufferEntrada.get(x+1))) {
+					if(verificaSeLinhaTemNumProcesso(bufferEntrada.get(x) + bufferEntrada.get(x+1))) {
+						dummy = bufferEntrada.get(x)+bufferEntrada.get(x+1);
+						x = x + 1;
+					} else {
+						dummy = bufferEntrada.get(x);
+					}
+					
+				}
+			}
+			
+			//------------------------------------------------------------------------------------------------------
+			
+			if((contaPalavras(dummy) == 1) && (dummy.equals("poder") && bufferEntrada.get(x+1).equals("judiciario"))) {	
+				dummy = dummy + " " + bufferEntrada.get(x+1);
+				x = x + 1;
+			}
+			
+			//------------------------------------------------------------------------------------------------------
+			
+			bufferFormatado.add(dummy);
+		}
+		Comuns.apresentaMenssagem("Fim da fase de formatação", tipoProcessamento, "informativa", null);
+		registraLog(" Fim da formatação do buffer de entrada\n");
+	}
+	
+	private static boolean somenteNumeros(String linha) {
+		String dummy = linha.replaceAll(".", "");
+		for(int x = 0; x <= dummy.length()-1; x++) {
+			if ((dummy.charAt(x) >= '0' && dummy.charAt(x) <= '9')){
+				continue;
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	@SuppressWarnings("unused")
 	private static void separaPublicacoes(File edicao) throws Exception {
@@ -674,7 +732,7 @@ public class SplitDO  {
 		
 		try {
 			if(sequencialSaida > 1) totalPublicacoes = totalPublicacoes + sequencialSaida;
-			bufferEntrada.clear();
+			bufferFormatado.clear();
 			tribunal = "";
 			strTribunal = "";
 			strEdicao = "";
@@ -692,28 +750,29 @@ public class SplitDO  {
 			if(!carregaEdicao(edicao)){
 				Comuns.apresentaMenssagem("Edição do Diário Oficial não contém publicações.", tipoProcessamento, "informativa", null);
 			} else {
+				formataBufferEntrada();
 				carregaIndice();
 				mapeiaLinhas();		
- 		        if (bufferEntrada.get(0).contains("Caderno Judiciário")){
+ 		        if (bufferFormatado.get(0).contains("Caderno Judiciário")){
 		        	dummy = "";
-		        	tribunal = obtemTribunal(bufferEntrada.get(0));		
-			    	strTribunal = (completaEsquerda(obtemTribunal(bufferEntrada.get(0)), '0', 2));
-			    	titulo1 = bufferEntrada.get(0).trim(); 
-				    titulo2 = bufferEntrada.get(1).trim();
-			        titulo3 = bufferEntrada.get(2).trim();
+		        	tribunal = obtemTribunal(bufferFormatado.get(0));		
+			    	strTribunal = (completaEsquerda(obtemTribunal(bufferFormatado.get(0)), '0', 2));
+			    	titulo1 = bufferFormatado.get(0).trim(); 
+				    titulo2 = bufferFormatado.get(1).trim();
+			        titulo3 = bufferFormatado.get(2).trim();
 			    
-			        numeroEdicao = primeiraPalavra(bufferEntrada.get(3));
+			        numeroEdicao = primeiraPalavra(bufferFormatado.get(3));
 	
-			        dummy = obtemEdicao(bufferEntrada.get(3));
+			        dummy = obtemEdicao(bufferFormatado.get(3));
 			        strEdicao = dummy + "T00:00:00.000-03:00";
-			        titulo4 = bufferEntrada.get(3).trim();
-			        seqEdicao = bufferEntrada.get(3).trim().substring(2, 6);
+			        titulo4 = bufferFormatado.get(3).trim();
+			        seqEdicao = bufferFormatado.get(3).trim().substring(2, 6);
 			        
 			        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 			        sdf.setLenient(false);
 			        DtEdicao = sdf.parse(dummy);
 			        
-			        titulo5 = bufferEntrada.get(4).trim();
+			        titulo5 = bufferFormatado.get(4).trim();
 					if (strTribunal.equals("00")) {
 						Comuns.apresentaMenssagem("\n" + "TST -"+" Edição: " + dataEdicao, tipoProcessamento, "informativa", null);
 						edtFolderName = "\n" + "TST - " + seqEdicao;
@@ -759,7 +818,7 @@ public class SplitDO  {
 						fechaPublicacao((ArrayList<String>) edital);
 					}
 		        	
-		    		secao = bufferEntrada.get(Indice.linhaSecao).trim();
+		    		secao = bufferFormatado.get(Indice.linhaSecao).trim();
 		    		sequencialSecao = Indice.linhaSecao;
 		    		paginaSecao = Indice.paginaSecao;
 
@@ -772,7 +831,7 @@ public class SplitDO  {
 						secao = secao + " " + Indice.complementoSecao;
 					}
 		    		padraoGrupo.clear();
-		    		grupo = bufferEntrada.get(Indice.linhaGrupo).trim();
+		    		grupo = bufferFormatado.get(Indice.linhaGrupo).trim();
 		    		paginaGrupo = Indice.paginaGrupo;
 		    		padraoGrupo.add("grupo");
 		    		sequencial = Indice.linhaGrupo + 1;
@@ -830,10 +889,9 @@ public class SplitDO  {
 
      		
 //   System.out.println(sequencial);		   
-//   if(sequencial >= 143120) {
+//   if(sequencial >= 161193) {
 // 	   k++;
 //   }
-
 //	if(sequencial >= 50) {
 //		k++;
 //	}
@@ -1646,11 +1704,39 @@ public class SplitDO  {
 		return false;
 	}
 	
+	private static String formataLinhaComProcesso(String linha) {
+		String linhaProcesso = linha;
+		String dummy = "";
+		String linhaDummy = "";
+		
+		if(linha.startsWith("Processo Nº") || linha.startsWith("PROC. Nº")) {
+			dummy = "";
+			dummy = obtemNumeroProcesso(linha);
+			if(dummy == null) {
+				linhaProcesso = linha + carregaLinha(sequencial,true,745);
+			}
+		}
+		
+		if(linha.equals("PROC. Nº")) {
+			dummy = "";
+			linhaDummy = carregaLinha(sequencial,false,745);
+			dummy = obtemNumeroProcesso(linhaDummy);
+			if(!dummy.isEmpty()) {
+				linhaProcesso = linha + " " + linhaDummy;
+				sequencial++;
+			}
+		}
+		
+		return linhaProcesso;
+	}
+	
 	private static boolean quebraProcesso(int indice) throws Exception {
 		String strDummy = "";
 		String dummy = "";
 		String procDummy = "";
-		String linhaDummy = carregaLinha(indice, false,1581);
+		
+		String linhaDummy = formataLinhaComProcesso(carregaLinha(indice, false,1581));
+
 		strDummy = obtemNumeroProcesso(linhaDummy);
 		boolean achouFuncao = false;
 
@@ -2133,22 +2219,22 @@ public class SplitDO  {
 		String linha = "";
 		boolean saida = false;
 		String linhaOrigem = completaEsquerda(Integer.toString(numLinha),'0',7);
-		while(bufferEntrada.get(ix).trim().equals("") || bufferEntrada.get(ix).trim().isEmpty()) {
+		while(bufferFormatado.get(ix).trim().equals("") || bufferFormatado.get(ix).trim().isEmpty()) {
 			ix++;
 		}
 
-		if(bufferEntrada.get(ix).startsWith("Código para aferir autenticidade") ||
-				bufferEntrada.get(ix).startsWith("Data da Disponibilização:") ||
-				primeiraPalavra(bufferEntrada.get(ix)).matches("\\d{4}\\W\\d{4}")){
+		if(bufferFormatado.get(ix).startsWith("Código para aferir autenticidade") ||
+				bufferFormatado.get(ix).startsWith("Data da Disponibilização:") ||
+				primeiraPalavra(bufferFormatado.get(ix)).matches("\\d{4}\\W\\d{4}")){
 			in = ix;
 
 			while(!saida) {
-				if(bufferEntrada.get(in).startsWith("Código para aferir autenticidade") ||
-						bufferEntrada.get(in).startsWith("Data da Disponibilização:") ||
-						primeiraPalavra(bufferEntrada.get(in)).matches("\\d{4}\\W\\d{4}") ||
-								(bufferEntrada.get(in).trim().equals("") || bufferEntrada.get(in).trim().isEmpty())){
-					if(primeiraPalavra(bufferEntrada.get(ix)).matches("\\d{4}\\W\\d{4}")){ 
-						pagina = obtemPagina(bufferEntrada.get(ix));
+				if(bufferFormatado.get(in).startsWith("Código para aferir autenticidade") ||
+						bufferFormatado.get(in).startsWith("Data da Disponibilização:") ||
+						primeiraPalavra(bufferFormatado.get(in)).matches("\\d{4}\\W\\d{4}") ||
+								(bufferFormatado.get(in).trim().equals("") || bufferFormatado.get(in).trim().isEmpty())){
+					if(primeiraPalavra(bufferFormatado.get(ix)).matches("\\d{4}\\W\\d{4}")){ 
+						pagina = obtemPagina(bufferFormatado.get(ix));
 					}
 					in++;
 					continue;
@@ -2171,7 +2257,7 @@ public class SplitDO  {
 		} else {
 			registraLog("("+ linhaOrigem + ") linha: " + " lida.");
 		}
-		linha = bufferEntrada.get(ix).trim().replace("&", "e");
+		linha = bufferFormatado.get(ix).trim().replace("&", "e");
 		return linha;
 	}
 
@@ -2212,9 +2298,9 @@ public class SplitDO  {
 		int x = 0;
 		String linhaDummy  = "";
 		
-		if(primeiraPalavra(bufferEntrada.get(sequencialIndice)).matches("\\d{4}\\W\\d{4}")){
-			for(x = sequencialIndice; x<=bufferEntrada.size()-1;x++) {
-				if(!bufferEntrada.get(x).startsWith("Código para aferir autenticidade")){
+		if(primeiraPalavra(bufferFormatado.get(sequencialIndice)).matches("\\d{4}\\W\\d{4}")){
+			for(x = sequencialIndice; x<=bufferFormatado.size()-1;x++) {
+				if(!bufferFormatado.get(x).startsWith("Código para aferir autenticidade")){
 					continue; 
 				} else {
 					sequencialIndice = x+1;
@@ -2222,13 +2308,13 @@ public class SplitDO  {
 				}
 			}
 		}
-		if(sequencialIndice == bufferEntrada.size()) {
+		if(sequencialIndice == bufferFormatado.size()) {
 			seqIndex = sequencialIndice;
 			sequencialIndice = sequencialIndice-1;
-			linhaDummy  = bufferEntrada.get(bufferEntrada.size()-1);
+			linhaDummy  = bufferFormatado.get(bufferFormatado.size()-1);
 		} else {
 			seqIndex = sequencialIndice;
-			linhaDummy  = bufferEntrada.get(sequencialIndice);
+			linhaDummy  = bufferFormatado.get(sequencialIndice);
 			sequencialIndice++;
 		}
 		seqIndex = sequencialIndice;
@@ -2716,7 +2802,7 @@ public class SplitDO  {
 	}
 	
 	private static void separaLinhas(String texto) {
-		registraLog("Início da carga da edição no bufferEntrada (separaLinhas)");
+		registraLog("Início da carga da edição no bufferFormatado (separaLinhas)");
 		String result = "";
 		int endIndex = 0 ;
 		result = texto.replaceAll("\\n", "%%");
@@ -2872,10 +2958,10 @@ public class SplitDO  {
 	
 	private static int posicionaIndice() { 
 		registraLog("Posicionando início do indice");
-		int ultimaLinha = bufferEntrada.size()-1;
+		int ultimaLinha = bufferFormatado.size()-1;
 
 		for(int x=0; x<=2000; x++) {
-			if(bufferEntrada.get(ultimaLinha).equals("SUMÁRIO")) {
+			if(bufferFormatado.get(ultimaLinha).equals("SUMÁRIO")) {
 				registraLog("Início do indice localizado");
 				return ultimaLinha;
 			}
@@ -2905,7 +2991,7 @@ public class SplitDO  {
 
 		//sequencialIndice = bufferEntrada.indexOf("SUMÁRIO")+1;
 		sequencialIndice = posicionaIndice()+1;
-		bufferEntrada.remove(sequencialIndice-1);
+		bufferFormatado.remove(sequencialIndice-1);
 		sequencialIndice--;
 		Index.clear();
 		Comuns.apresentaMenssagem("Início do carregamento do índice desta edição.", tipoProcessamento, "informativa", null);
@@ -2913,7 +2999,7 @@ public class SplitDO  {
 		try {
 		
 			if(sequencialIndice > 0) {
-				while(sequencialIndice <= bufferEntrada.size()-1) {	
+				while(sequencialIndice <= bufferFormatado.size()-1) {	
 					linha = carregaLinhaIndice();
 					seq = seqIndex;	
 					if(linha.charAt(0) == ' ')  {
@@ -2930,13 +3016,13 @@ public class SplitDO  {
 						if(ehInteiro(rabo) && contaPalavras(linha) > 1) {
 							strPagina = rabo;
 							dummy = linha.substring(0, linha.length()-strPagina.length());
-							bufferEntrada.remove(sequencialIndice-1);
+							bufferFormatado.remove(sequencialIndice-1);
 							sequencialIndice--;
 						} 
 	
 						if(dummy.isEmpty()) {
 							dummy = linha;
-							bufferEntrada.remove(sequencialIndice-1);
+							bufferFormatado.remove(sequencialIndice-1);
 							sequencialIndice--;
 							if(!ehInteiro(rabo)) {
 								continua = true;
@@ -2945,14 +3031,14 @@ public class SplitDO  {
 					} else {
 						dummy = dummy + " " + linha;
 						continua = false;
-						bufferEntrada.remove(sequencialIndice-1);
+						bufferFormatado.remove(sequencialIndice-1);
 						sequencialIndice--;
 						continue;
 					}
 	
 					if(ehInteiro(rabo) && contaPalavras(linha) == 1) {
 						strPagina = linha.trim();
-						bufferEntrada.remove(sequencialIndice-1);
+						bufferFormatado.remove(sequencialIndice-1);
 						sequencialIndice--;
 					}
 	
@@ -3316,9 +3402,9 @@ public class SplitDO  {
         	if(!secaoAnterior.equals(Indice.secao)){
         		secaoAnterior = "";
         	}							
-        	while(sequencia <= bufferEntrada.size()-1){					// 	Loop de procura pela SECAO
+        	while(sequencia <= bufferFormatado.size()-1){					// 	Loop de procura pela SECAO
 
-    	        linha = bufferEntrada.get(sequencia);
+    	        linha = bufferFormatado.get(sequencia);
 		        sequencia++;
 		        if(linha == null) {
 		        	break;
@@ -3343,7 +3429,7 @@ public class SplitDO  {
 	        			if(linha.length() < Indice.secao.length()){
 	        				contador = sequencia;
 	        				while(!saida){					
-	        					linhaDummy = bufferEntrada.get(contador).trim();
+	        					linhaDummy = bufferFormatado.get(contador).trim();
 								if(linhaDummy.startsWith("Código para aferir autenticidade deste caderno") || 
 	        						linhaDummy.startsWith("Tribunal Regional do Trabalho da") ||
 	        						linhaDummy.startsWith("Data da Disponibilização:")){
@@ -3368,7 +3454,7 @@ public class SplitDO  {
 	        		contador = sequencia;
 	        		linhasLidas = 0;
 					while(contador <= 30){
-						linhaDummy = bufferEntrada.get(contador).trim();
+						linhaDummy = bufferFormatado.get(contador).trim();
 						if(linhaDummy.startsWith("Código para aferir autenticidade deste caderno") || 
         						linhaDummy.startsWith("Tribunal Regional do Trabalho da") ||
         						linhaDummy.startsWith("Data da Disponibilização:")){

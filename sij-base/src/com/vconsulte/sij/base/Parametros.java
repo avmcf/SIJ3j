@@ -203,9 +203,13 @@ package com.vconsulte.sij.base;
 //
 //	versao clipping 	2.6
 // 	versao cleaner 		2.6
-//	versao spliter 		2.6.1	- 10 de abril 2021
+//	versao splitDO 		2.6.1	- 10 de abril 2021
 //								- correções no método carregarIndice
 //								- inclusão do método posicionarIndice
+//
+//	versao splitDO		2.7		- 16 de abril 2021
+//								- Inclusão de méteodo formataBufferEntrada() para formatar o bufferEntrada 
+//
 //
 //
 // **************************************
@@ -226,7 +230,7 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.6.1";
+    public static final String VERSAOSPLITER 			= "2.7";
     public static final String VERSAOCLIPPING 			= "2.6";
     public static final String VERSAOCLEANER 			= "2.6";
     public static final String FONTSIZE 				= "9";
