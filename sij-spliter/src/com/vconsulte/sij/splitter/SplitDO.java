@@ -211,6 +211,10 @@ package com.vconsulte.sij.splitter;
 //					- Inclusão de méteodo formataBufferEntrada() para formatar o bufferEntrada 
 //
 //
+//	versao 2.7.1	- 20 de abril 2021
+//					-  correções no loop de leituras zerando os buffers de entrada e formatado
+//
+//
 //
 //
 //
@@ -581,6 +585,7 @@ public class SplitDO  {
 		if(tipoProcessamento.equals("BATCH")){
 			for (File file : files) {
 				dummy = file.getName();
+		//		bufferFormatado.clear();
 				if(!parametrizado) {
 					if(file.getPath().contains("._")){
 						continue;
@@ -732,7 +737,7 @@ public class SplitDO  {
 		
 		try {
 			if(sequencialSaida > 1) totalPublicacoes = totalPublicacoes + sequencialSaida;
-			bufferFormatado.clear();
+			
 			tribunal = "";
 			strTribunal = "";
 			strEdicao = "";
@@ -746,10 +751,11 @@ public class SplitDO  {
 			edital.clear();
 			introducao.clear();
 			paragrafos.clear();
-			
+			bufferEntrada.clear();
 			if(!carregaEdicao(edicao)){
 				Comuns.apresentaMenssagem("Edição do Diário Oficial não contém publicações.", tipoProcessamento, "informativa", null);
 			} else {
+				bufferFormatado.clear();
 				formataBufferEntrada();
 				carregaIndice();
 				mapeiaLinhas();		

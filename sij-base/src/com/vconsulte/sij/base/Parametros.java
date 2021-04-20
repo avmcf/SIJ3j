@@ -201,8 +201,8 @@ package com.vconsulte.sij.base;
 //					- Correções na finalização das publicações
 //					- Inclusão do resumo com quantidade de publicações processadas
 //
-//	versao clipping 	2.6
-// 	versao cleaner 		2.6
+//	versao clipping 	2.6		- versao inicial
+// 	versao cleaner 		2.6		- versão inicial
 //	versao splitDO 		2.6.1	- 10 de abril 2021
 //								- correções no método carregarIndice
 //								- inclusão do método posicionarIndice
@@ -211,10 +211,11 @@ package com.vconsulte.sij.base;
 //								- Inclusão de méteodo formataBufferEntrada() para formatar o bufferEntrada 
 //
 //
+//	versao splitDO 		2.7.1	- 20 de abril 2021
+//								-  correções no loop de leituras zerando os buffers de entrada e formatado
 //
-// **************************************
-// **** ÚLTIMA VERSÃO FORNECIDA A JAQ ***
-// **************************************
+//
+//
 //
 // 	V&C Consultoria Ltda.
 // 	Autor: Arlindo Viana.
@@ -230,7 +231,7 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.7";
+    public static final String VERSAOSPLITER 			= "2.7.1";
     public static final String VERSAOCLIPPING 			= "2.6";
     public static final String VERSAOCLEANER 			= "2.6";
     public static final String FONTSIZE 				= "9";
