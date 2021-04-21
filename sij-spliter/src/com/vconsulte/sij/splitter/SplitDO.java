@@ -613,7 +613,8 @@ public class SplitDO  {
 			separaPublicacoes(edicaoEscolhida);			
 		}
 		Comuns.gravaLog(logFolder, nomeArqLog, "splitdo",log);	
-		Comuns.gravaArquivoTexto(logFolder, "spl" + tribunaisSolicitados + "-resumo.txt", resumoPublicacoes);
+		//Comuns.gravaArquivoTexto(logFolder, "spl" + tribunaisSolicitados + "-resumo.txt", resumoPublicacoes);
+		Comuns.gravaArquivoTexto(logFolder, "spl-resumo.txt", resumoPublicacoes);
 		Comuns.gravaArquivoTexto(logFolder, "publicacoes.txt", listaDePublicacoes);
 	}
 	
