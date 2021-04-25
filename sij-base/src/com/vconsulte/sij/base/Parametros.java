@@ -215,6 +215,10 @@ package com.vconsulte.sij.base;
 //								-  correções no loop de leituras zerando os buffers de entrada e formatado
 //
 //
+// versao splitDO 		2.7.2	-   de abril 2021
+//								-  Tratamento no método mapeiaLinha() para tratar duplicidades no indice do diario oficial
+//
+//
 //
 //
 // 	V&C Consultoria Ltda.
@@ -231,7 +235,7 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.7.1";
+    public static final String VERSAOSPLITER 			= "2.7.2";
     public static final String VERSAOCLIPPING 			= "2.6";
     public static final String VERSAOCLEANER 			= "2.6";
     public static final String FONTSIZE 				= "9";

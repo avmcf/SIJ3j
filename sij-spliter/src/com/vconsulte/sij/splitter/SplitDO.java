@@ -214,6 +214,9 @@ package com.vconsulte.sij.splitter;
 //	versao 2.7.1	- 20 de abril 2021
 //					-  correções no loop de leituras zerando os buffers de entrada e formatado
 //
+//	versao 2.7.2	-   de abril 2021
+//					-  Tratamento no método mapeiaLinha() para tratar duplicidades no indice do diario oficial
+//
 //
 //
 //
@@ -828,7 +831,6 @@ public class SplitDO  {
 		    		secao = bufferFormatado.get(Indice.linhaSecao).trim();
 		    		sequencialSecao = Indice.linhaSecao;
 		    		paginaSecao = Indice.paginaSecao;
-
 		    		registraLog("-----------------------------------------------------------------------------");
 		    		registraLog("*** Início da publicação nº " + sequencialSaida + " iniciado. ***");
 		    		registraLog("Seção -> " + secao + " - sequencial: " + sequencial);
@@ -895,20 +897,20 @@ public class SplitDO  {
 		        		linha = carregaLinha(sequencial,true,745);
 
      		
-//   System.out.println(sequencial);		   
-//   if(sequencial >= 161193) {
-// 	   k++;
-//   }
-//	if(sequencial >= 50) {
-//		k++;
-//	}
-//	if(sequencial >= 83) {	//  {
-//		k++;
-//	}
-//	if(sequencial >= 299546) {	//	{
-//	   k++;
-//   	} 
-
+/*   System.out.println(sequencial);		   
+   if(sequencial >= 17 ) {
+ 	   k++;
+   }
+   if(sequencial >= 50) {
+	   k++;
+   }
+   if(sequencial >= 83) {	//  {
+	   k++;
+   }
+   if(sequencial >= 110735) {	//	{
+	   k++;
+   } 
+*/
 		        		if(linha.equals("*** MARCA FIM ***")){
 							break;
 						}
@@ -1801,7 +1803,6 @@ public class SplitDO  {
 		        		}
 						
 						if(dummy.equals(formataPalavra(secao)) && formataPalavra(carregaLinha(x-1,false,1627)).equals("tribunal regional do trabalho")) {
-							k++;
 							return true;
 						}
 						
@@ -3002,7 +3003,6 @@ public class SplitDO  {
 		sequencialIndice--;
 		Index.clear();
 		Comuns.apresentaMenssagem("Início do carregamento do índice desta edição.", tipoProcessamento, "informativa", null);
-
 		try {
 		
 			if(sequencialIndice > 0) {
@@ -3380,12 +3380,13 @@ public class SplitDO  {
 		}		
 	}
 
-	private static int localizaIndice(String sec, String cmp, String grp){
+	private static int localizaIndice(String sec, String cmp, String grp, int pgsc, int pggr){
 
 		for(int i = 0; i < Index.size(); i++){
-
 			if(Index.get(i).secao.equals(sec) && Index.get(i).complementoSecao.equals(cmp) && Index.get(i).grupo.equals(grp)){
-				return i;
+				if(Index.get(i).paginaSecao == pgsc && Index.get(i).paginaGrupo == pggr) {					
+					return i;
+				}
 			}
 		}
 		return -1;
@@ -3404,6 +3405,7 @@ public class SplitDO  {
 		String linha = "";
 		String secaoAnterior = " ";
 		String linhaDummy = "";
+		String [] arrayLinha;
 		Comuns.apresentaMenssagem("Início do mapeamento de linhas.", tipoProcessamento, "informativa", null);
         for (IndiceEdicao Indice : Index) {								// loop do Index
         	if(!secaoAnterior.equals(Indice.secao)){
@@ -3421,6 +3423,8 @@ public class SplitDO  {
 	        		pagina = 1;
 	        	}
 		        
+		        arrayLinha = linha.split(" ");
+
 		        if(linha.contains("Tribunal Regional do Trabalho da") && (linha.substring(0, 18).matches("\\d{4}\\W\\d{4}\\s\\w{8}"))){
 		        	intDummy = atualizaPagina(linha);
 		        	if(intDummy != -1) {
@@ -3449,8 +3453,7 @@ public class SplitDO  {
 										saida = true;
 										break;
 									}
-								}	
-								contador++;	        				
+								}		
 	        				}
 	        				linhaDummy = "";
 	        			}
@@ -3469,7 +3472,6 @@ public class SplitDO  {
         					continue;
         				} else {	
     						if(obtemNumeroProcesso(linhaDummy) != null || linha.equals("Portaria")){
-	        					k++;
     							break;       					
 	        				}
 	        			}
@@ -3479,13 +3481,13 @@ public class SplitDO  {
 					linhaDummy = "";						
 					if(linhasLidas <= 30){
 	    	        	if(secaoAnterior != null){	
-		    	        	regIndice = localizaIndice(Indice.secao, Indice.complementoSecao, Indice.grupo);  	        			    	        	
+		    	        	regIndice = localizaIndice(Indice.secao, Indice.complementoSecao, Indice.grupo, Indice.paginaSecao, Indice.paginaGrupo);  	
 		    	        	if(regIndice >= 0){
 		    	        		Index.get(regIndice).setLinhaSecao(linhaSecao);
 		    	        		Index.get(regIndice).setLinhaGrupo(sequencia-1);
 		    	        		saida = true;
 		    	        		break;		    	        		
-		    	        	}    	        	     	
+		    	        	}
 	    	        	}
 					} else {
 						continue;
