@@ -215,8 +215,12 @@ package com.vconsulte.sij.base;
 //								-  correções no loop de leituras zerando os buffers de entrada e formatado
 //
 //
-// versao splitDO 		2.7.2	-   de abril 2021
+// 	versao splitDO 		2.7.2	- 25 de abril 2021
 //								-  Tratamento no método mapeiaLinha() para tratar duplicidades no indice do diario oficial
+//
+//
+//	versao splitDO 		2.8		-  04 de Maio 2021
+//								-  Atualização nos algorítimos de quebra
 //
 //
 //
@@ -235,7 +239,7 @@ public class Parametros {
 	
 	public static final String USUARIO 					= "sij";
     public static final String PASSWORD 				= "934769386";
-    public static final String VERSAOSPLITER 			= "2.7.2";
+    public static final String VERSAOSPLITER 			= "2.8";
     public static final String VERSAOCLIPPING 			= "2.6";
     public static final String VERSAOCLEANER 			= "2.6";
     public static final String FONTSIZE 				= "9";
@@ -573,7 +577,6 @@ public class Parametros {
 		JURIDIQUES.add("judiciario");
 		JURIDIQUES.add("juros");
 		JURIDIQUES.add("justica");
-		JURIDIQUES.add("trabalho");
 		JURIDIQUES.add("litispendencia");
 		JURIDIQUES.add("merito");
 		JURIDIQUES.add("mora");
@@ -624,7 +627,7 @@ public class Parametros {
 		JURIDIQUES.add("sentenca");
 		JURIDIQUES.add("sessao");
 		JURIDIQUES.add("sustentacao");
-		JURIDIQUES.add("trabalho");
+//		JURIDIQUES.add("trabalho");
 		JURIDIQUES.add("turma");
 		JURIDIQUES.add("trt");
 		JURIDIQUES.add("tst");

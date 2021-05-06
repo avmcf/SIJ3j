@@ -212,10 +212,14 @@ package com.vconsulte.sij.splitter;
 //
 //
 //	versao 2.7.1	- 20 de abril 2021
-//					-  correções no loop de leituras zerando os buffers de entrada e formatado
+//					- Correções no loop de leituras zerando os buffers de entrada e formatado
 //
-//	versao 2.7.2	-   de abril 2021
-//					-  Tratamento no método mapeiaLinha() para tratar duplicidades no indice do diario oficial
+//	versao 2.7.2	- 25 de abril 2021
+//					- Tratamento no método mapeiaLinha() para tratar duplicidades no indice do diario oficial
+//
+//
+//	versao 2.8		- 04 de maio 2021
+//					- Atualizaações nos algorítimos de quebra
 //
 //
 //
@@ -435,7 +439,6 @@ public class SplitDO  {
 	static boolean pauta = false;
 	static boolean dtValida = false;
 	static boolean grupoSemAssunto = true;
-	static boolean ttt = true;
 	static boolean parametrizado = false;
 	
 	//static MsgWindow msgWindow = new MsgWindow();
@@ -453,7 +456,6 @@ public class SplitDO  {
 	static Base base = new Edital();
 
 	static int k = 0;								// para testes
-	static int kk = 100;
 		
 	public static void main(String[] args) throws Exception {
 		String dummy = args.toString();
@@ -615,7 +617,8 @@ public class SplitDO  {
 		} else {
 			separaPublicacoes(edicaoEscolhida);			
 		}
-		Comuns.gravaLog(logFolder, nomeArqLog, "splitdo",log);	
+		//Comuns.gravaLog(logFolder, nomeArqLog, "splitdo",log);
+		Comuns.gravaLog(logFolder, "splitDo", "splitdo",log);	
 		//Comuns.gravaArquivoTexto(logFolder, "spl" + tribunaisSolicitados + "-resumo.txt", resumoPublicacoes);
 		Comuns.gravaArquivoTexto(logFolder, "spl-resumo.txt", resumoPublicacoes);
 		Comuns.gravaArquivoTexto(logFolder, "publicacoes.txt", listaDePublicacoes);
@@ -834,8 +837,6 @@ public class SplitDO  {
 		    		registraLog("-----------------------------------------------------------------------------");
 		    		registraLog("*** Início da publicação nº " + sequencialSaida + " iniciado. ***");
 		    		registraLog("Seção -> " + secao + " - sequencial: " + sequencial);
-		    	//	Comuns.apresentaMenssagem("-----------------------------------------------------------------------------");
-		    	//	Comuns.apresentaMenssagem("TRT " + tribunal + "ª região - Local: " + secao + " - pg: " + Indice.paginaSecao + " / " + ultimaPagina);
 		    		if(Indice.complementoSecao != null && !Indice.complementoSecao.equals("complemento")) {
 						secao = secao + " " + Indice.complementoSecao;
 					}
@@ -903,14 +904,14 @@ public class SplitDO  {
    }
    if(sequencial >= 50) {
 	   k++;
-   }
-   if(sequencial >= 83) {	//  {
-	   k++;
-   }
-   if(sequencial >= 110735) {	//	{
+   }*/
+   if(sequencial >= 3281) {	
 	   k++;
    } 
-*/
+   if(sequencial >= 3253) {
+	   k++;
+   } 
+
 		        		if(linha.equals("*** MARCA FIM ***")){
 							break;
 						}
@@ -937,7 +938,7 @@ public class SplitDO  {
 		        			processoDummy = obtemNumeroProcesso(linha);
 		        			if(processoNumero == "") {
 		        				processoNumero = processoDummy;
-		        				processoDummy = null;					// para força a não quebra da publicação
+		        			//	processoDummy = null;					// para força a não quebra da publicação
 		        			}
 		        		} else {
 		        			processoDummy = null;
@@ -971,9 +972,10 @@ public class SplitDO  {
 						 * 
 						 */
 		
-		        		// hoje if((tabelaAssuntos.contains(formataPalavra(primeiraPalavra(linha))) && !grupoSemAssunto) || (linhaDummy.equals("ordem"))) {
+		        		// if((tabelaAssuntos.contains(formataPalavra(primeiraPalavra(linha))) && !grupoSemAssunto) || (linhaDummy.equals("ordem"))) {
 		        		if((validaAssunto(linha) && !grupoSemAssunto) || validaExcecaoAssunto(formataPalavra(linha))) {
-		        			if((quebraAssunto(sequencial-1,limiteGrupo) && !salvarIntroducao) || (linhaDummy.equals("ordem") && salvarIntroducao)) {						
+		        			//if((quebraAssunto(sequencial-1,limiteGrupo) && !salvarIntroducao) || (linhaDummy.equals("ordem") && salvarIntroducao)) {
+		        			if((quebraAssunto(sequencial-1,limiteGrupo) ) || (linhaDummy.equals("ordem") && salvarIntroducao)) {
 		        				registraLog("quebra por assunto identificada");
 		        				if(paginaPublicacao.isEmpty()) paginaPublicacao = completaEsquerda(Integer.toString(pagina), '0', 6);
 		        				if(!padraoGrupo.contains("assunto")) {
@@ -998,11 +1000,9 @@ public class SplitDO  {
 									quebrouAssunto = true;
 									assunto = linha;
 								}
-							
+								
 								sequencialAssunto = sequencial-1;
-								linhaPauta = "";
-								//registraLog(" ass -> " + sequencial + " - " + assunto + " - arquivo --> " + sequencialSaida);
-		
+								linhaPauta = "";		
 								if(!verificaSeLinhaTemNumProcesso(carregaLinha(sequencial,false,821))) {
 									if(!textoIntroducao.isEmpty() && salvarIntroducao) {
 										textoIntroducao.clear();
@@ -1029,6 +1029,7 @@ public class SplitDO  {
 								}
 								continue;
 		        			}
+
 						} else { 
 							if (sequencial-2 == sequencialGrupo && (grupo.equals("Pauta") && !validaAtor(linha))) {
 								linhaAntesAssunto = linha;
@@ -1042,7 +1043,8 @@ public class SplitDO  {
 						 * 
 						 */
 						if(salvarIntroducao){
-							if(processoDummy == null) {					
+						//	if(processoDummy == null) {		
+							if(!verificaSeLinhaTemNumProcesso(linha)) {
 								if(!padraoGrupo.contains("introducao")) {
 									padraoGrupo.add("introducao");
 								}
@@ -1061,6 +1063,7 @@ public class SplitDO  {
 						 * Quebra por Nº PROCESSO
 						 */
 						if(processoDummy != null) {
+						//if(verificaSeLinhaTemNumProcesso(linha)) {
 							if(quebraProcesso(sequencial-1)) {	
 								registraLog("quebra por processo identificada");
 								if(paginaPublicacao.isEmpty()) paginaPublicacao = completaEsquerda(Integer.toString(pagina), '0', 6);
@@ -1862,11 +1865,16 @@ public class SplitDO  {
 							registraLog("\t" + "--- >> " + sequencial + " - quebra processo");
 							return false;
 						}
+						if(verificaSeLinhaTemNumProcesso(dummy)) {
+							if(obtemNumeroProcesso(dummy).equals(processoNumero) && x <= indice) {
+								return false;
+							}
+						}
 					}
 					
-					if(strDummy.equals(processoNumero)) {
-						return false;
-					}
+//					if(strDummy.equals(processoNumero)) {
+//						return false;
+//					}
 					
 					// loop progressivo 
 					for(int x = indice; x<=indice+50; x++) { 
@@ -2600,7 +2608,7 @@ public class SplitDO  {
 								if(!validaParagrafo(sequencial)) {
 								//	if(temContinuacao(linhaDummyAnterior)) {
 										if(linhaDummy.charAt(0) != '-' && verificaMaiuscula(linhaDummy) && verificaMaiuscula(linhaDummyAnterior)) {
-											if(bloco.length() < 100 && (bloco.length() - linhaDummy.length() > linhaDummy.length() )) {
+											if(bloco.length() < 180 && (bloco.length() - linhaDummy.length() > linhaDummy.length() )) {
 												bloco = bloco + " " + linhaDummy;
 											} else {
 												bloco = bloco + "\n" + linhaDummy;
